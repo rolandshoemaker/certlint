@@ -13,19 +13,9 @@ import (
 
 const checkName = "Subject Alternative Names Check"
 
-var idnaProfile *idna.Profile
 var idnaUnderscoreError = goerr.New("idna: disallowed rune U+005F")
 
 func init() {
-	idnaProfile = idna.New(
-		idna.BidiRule(),
-		idna.MapForLookup(),
-		idna.ValidateForRegistration(),
-		idna.ValidateLabels(true),
-		idna.VerifyDNSLength(true),
-		idna.StrictDomainName(true),
-		idna.Transitional(false))
-
 	checks.RegisterCertificateCheck(checkName, nil, Check)
 }
 
@@ -51,7 +41,7 @@ func Check(d *certdata.Data) *errors.Errors {
 			}
 
 			// Check email address domain part
-			if _, err := idnaProfile.ToASCII(em[1]); err != nil {
+			if _, err := idna.ToASCII(em[1]); err != nil {
 				e.Err("Certificate subjectAltName '%s', %s", s, err.Error())
 			}
 
@@ -70,7 +60,7 @@ func Check(d *certdata.Data) *errors.Errors {
 		// While the commonname is not a subjectAltName we use the same rule to
 		// validate the domain name. Check with stripped wildcards as they are non
 		// registrable.
-		if _, err := idnaProfile.ToASCII(strings.TrimPrefix(strings.ToLower(d.Cert.Subject.CommonName), "*.")); err != nil && err != idnaUnderscoreError {
+		if _, err := idna.ToASCII(strings.TrimPrefix(strings.ToLower(d.Cert.Subject.CommonName), "*.")); err != nil && err != idnaUnderscoreError {
 			e.Err("Certificate CommonName '%s', %s", d.Cert.Subject.CommonName, err.Error())
 		}
 
@@ -81,7 +71,7 @@ func Check(d *certdata.Data) *errors.Errors {
 			}
 
 			// Check subjectAltName with stripped wildcards as they are non registrable
-			if _, err := idnaProfile.ToASCII(strings.TrimPrefix(strings.ToLower(s), "*.")); err != nil && err != idnaUnderscoreError {
+			if _, err := idna.ToASCII(strings.TrimPrefix(strings.ToLower(s), "*.")); err != nil && err != idnaUnderscoreError {
 				e.Err("Certificate subjectAltName '%s', %s", s, err.Error())
 			}
 		}
